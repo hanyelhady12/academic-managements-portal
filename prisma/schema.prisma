@@ -1,0 +1,272 @@
+// Prisma Schema - Faculty Schedule Management System with Student Tracking and Activity Logs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// USER MODEL - المستخدمين
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  role      String   @default("user") // "admin" or "user"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdFacultyMembers FacultyMember[]      @relation("FacultyCreator")
+  updatedFacultyMembers FacultyMember[]      @relation("FacultyUpdater")
+  createdCourses        Course[]             @relation("CourseCreator")
+  updatedCourses        Course[]             @relation("CourseUpdater")
+  createdAssignments    ScheduleAssignment[]
+  createdExams          Exam[]
+  createdLabs           Lab[]
+  createdMaterials      TeachingMaterial[]
+  createdStudents       Student[]
+  createdGroups         StudentGroup[]
+  createdActivities     Activity[]
+  accounts              Account[]
+  sessions              Session[]
+}
+
+// NEXTAUTH MODELS
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// FACULTY MEMBER MODEL
+model FacultyMember {
+  id           String   @id @default(cuid())
+  name         String
+  rank         String
+  lecturerType String?
+  gender       String? // "male", "female", or "both"
+  department   String?
+  createdById  String?
+  updatedById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdBy           User?                @relation("FacultyCreator", fields: [createdById], references: [id])
+  updatedBy           User?                @relation("FacultyUpdater", fields: [updatedById], references: [id])
+  scheduleAssignments ScheduleAssignment[]
+}
+
+// COURSE MODEL
+model Course {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  hours       Int
+  year        String // prep, year1, year2, year3, year4, year5
+  semester    Int // 1, 2, 3
+  section     String? // "boys", "girls", or "both"
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy           User?                @relation("CourseCreator", fields: [createdById], references: [id])
+  updatedBy           User?                @relation("CourseUpdater", fields: [updatedById], references: [id])
+  scheduleAssignments ScheduleAssignment[]
+  exams               Exam[]
+  labs                Lab[]
+  teachingMaterials   TeachingMaterial[]
+  studentGroups       StudentGroup[]
+  activities          Activity[]
+}
+
+// SCHEDULE ASSIGNMENT MODEL
+model ScheduleAssignment {
+  id           String   @id @default(cuid())
+  facultyId    String
+  courseId     String
+  academicYear String
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdBy     User?         @relation(fields: [createdById], references: [id])
+  facultyMember FacultyMember @relation(fields: [facultyId], references: [id])
+  course        Course        @relation(fields: [courseId], references: [id])
+}
+
+// EXAM MODEL - الامتحانات
+model Exam {
+  id          String   @id @default(cuid())
+  title       String
+  courseId    String
+  examDate    DateTime
+  examType    String // "midterm", "final", "quiz", "practical"
+  duration    Int? // Duration in minutes
+  location    String?
+  section     String? // "boys", "girls", or "both"
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User?   @relation(fields: [createdById], references: [id])
+  course    Course  @relation(fields: [courseId], references: [id])
+}
+
+// LAB MODEL - المخابر/المعامل
+model Lab {
+  id          String   @id @default(cuid())
+  name        String
+  courseId    String
+  labDay      String // e.g., "Monday", "Tuesday"
+  startTime   String // e.g., "09:00"
+  endTime     String // e.g., "11:00"
+  location    String?
+  capacity    Int?
+  section     String? // "boys", "girls", or "both"
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User?   @relation(fields: [createdById], references: [id])
+  course    Course  @relation(fields: [courseId], references: [id])
+}
+
+// TEACHING MATERIAL MODEL - مواد التدريس الإضافية/المساعدة
+model TeachingMaterial {
+  id          String   @id @default(cuid())
+  title       String
+  courseId    String
+  type        String // "handout", "presentation", "video", "reference", "assignment"
+  description String?
+  fileUrl     String?
+  externalUrl String?
+  section     String? // "boys", "girls", or "both"
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User?   @relation(fields: [createdById], references: [id])
+  course    Course  @relation(fields: [courseId], references: [id])
+}
+
+// STUDENT MODEL - الطلاب
+model Student {
+  id          String   @id @default(cuid())
+  name        String
+  studentId   String   @unique // Student ID number
+  email       String?  @unique
+  gender      String? // "male", "female"
+  year        String // prep, year1, year2, year3, year4, year5
+  semester    Int // 1, 2, 3
+  section     String? // "boys", "girls", or "both"
+  groupId     String?
+  phone       String?
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  attendanceRecords       Attendance[]
+  studentGroupMemberships StudentGroupMembership[]
+}
+
+// STUDENT GROUP MODEL - المجموعات الطلابية
+model StudentGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  courseId    String?
+  year        String?
+  semester    Int?
+  section     String? // "boys", "girls", or "both"
+  maxSize     Int? // Maximum students in group
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy  User?                    @relation(fields: [createdById], references: [id])
+  course     Course?                  @relation(fields: [courseId], references: [id])
+  members    StudentGroupMembership[]
+  activities Activity[]
+}
+
+// STUDENT GROUP MEMBERSHIP
+model StudentGroupMembership {
+  id        String   @id @default(cuid())
+  groupId   String
+  studentId String
+  role      String? // "leader", "member"
+  joinedAt  DateTime @default(now())
+
+  group   StudentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student Student      @relation(fields: [studentId], references: [id])
+
+  @@unique([groupId, studentId])
+}
+
+// ACTIVITY MODEL - الأنشطة (PBL)
+model Activity {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        String // "pbl", "workshop", "seminar", "presentation", "fieldtrip"
+  courseId    String?
+  groupId     String?
+  startDate   DateTime
+  endDate     DateTime?
+  location    String?
+  maxScore    Int? // For grading
+  section     String? // "boys", "girls", or "both"
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy         User?         @relation(fields: [createdById], references: [id])
+  course            Course?       @relation(fields: [courseId], references: [id])
+  group             StudentGroup? @relation(fields: [groupId], references: [id])
+  attendanceRecords Attendance[]
+}
+
+// ATTENDANCE MODEL - الحضور
+model Attendance {
+  id         String   @id @default(cuid())
+  studentId  String
+  activityId String
+  status     String // "present", "absent", "late", "excused"
+  notes      String?
+  recordedAt DateTime @default(now())
+
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, activityId], name: "studentId_activityId")
+}

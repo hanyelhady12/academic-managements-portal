@@ -1,0 +1,82 @@
+# Dependencies
+node_modules
+.next
+.bun
+
+# Environment variables
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+db/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dev.log
+server.log
+
+# Testing
+coverage
+*.lcov
+.nyc_output
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+.history
+*.vscode
+*.swp
+*.swo
+*~
+
+# Build output
+dist
+build
+.cache
+.turbo
+
+# Vercel
+.vercel
+
+# Netlify
+.netlify
+
+# Temp files
+tmp
+temp
+*.tmp
+check-users.ts
+ngrok.zip
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+
+# Upload files
+upload/
